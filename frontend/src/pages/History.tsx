@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
-import { useHistory } from '../contexts/HistoryContext';
+import { useApp } from '../contexts/AppContext';
 import type { Subject, Level } from '../types';
 import SessionList from '../components/SessionList';
 import HistoryFilters from '../components/HistoryFilters';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const History = () => {
-  const { sessions, clearHistory, loading } = useHistory();
+  const { sessions, clearHistory, loadingSessions } = useApp();
   const [selectedSubject, setSelectedSubject] = useState<Subject | 'all'>('all');
   const [selectedLevel, setSelectedLevel] = useState<Level | 'all'>('all');
 
@@ -40,7 +40,7 @@ const History = () => {
     }
   };
 
-  if (loading) {
+  if (loadingSessions) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-[400px]">
         <LoadingSpinner size="lg" />

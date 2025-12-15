@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { HistoryProvider } from './contexts/HistoryContext';
+import { AppProvider } from './contexts/AppContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -9,7 +9,7 @@ import About from './pages/About';
 
 function App() {
   return (
-    <HistoryProvider>
+    <AppProvider>
       <BrowserRouter>
         <div className="flex flex-col min-h-screen">
           <Navbar />
@@ -24,7 +24,7 @@ function App() {
           <Footer />
         </div>
       </BrowserRouter>
-    </HistoryProvider>
+    </AppProvider>
   );
 }
 

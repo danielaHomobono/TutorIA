@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTutor } from '../hooks/useTutor';
-import { useHistory } from '../contexts/HistoryContext';
+import { useApp } from '../contexts/AppContext';
 import SubjectTabs from '../components/SubjectTabs';
 import LevelSelector from '../components/LevelSelector';
 import TopicInput from '../components/TopicInput';
@@ -13,7 +12,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 const Tutor = () => {
   const location = useLocation();
-  const { addSession } = useHistory();
   const {
     subject,
     level,
@@ -33,7 +31,7 @@ const Tutor = () => {
     checkAllAnswers,
     clearError,
     isValid,
-  } = useTutor();
+  } = useApp();
 
   // Cargar datos de la sesión si vienen del historial (retry)
   useEffect(() => {
@@ -44,32 +42,6 @@ const Tutor = () => {
       setTopic(state.topic);
     }
   }, [location.state, setSubject, setLevel, setTopic]);
-
-  // Guardar sesión cuando todos los ejercicios estén completados
-  useEffect(() => {
-    if (
-      explanation &&
-      exercises.length > 0 &&
-      exercises.every((ex) => ex.isCorrect !== undefined)
-    ) {
-      const correctCount = exercises.filter((ex) => ex.isCorrect).length;
-      const totalCount = exercises.length;
-      const percentage = Math.round((correctCount / totalCount) * 100);
-
-      addSession({
-        subject,
-        level,
-        topic,
-        explanation,
-        exercises,
-        score: {
-          correct: correctCount,
-          total: totalCount,
-          percentage,
-        },
-      });
-    }
-  }, [exercises, explanation, subject, level, topic, addSession]);
 
   return (
     <div className="min-h-screen">
