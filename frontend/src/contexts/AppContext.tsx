@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { Subject, Level, Explanation, Exercise, Session } from '../types';
-import { loadHistory, saveHistory, clearStoredHistory, generateSessionId } from '../utils/storage';
+import type { Subject, Level, Explanation, Exercise, Session, StudentProfile, LearningPreferences } from '../types';
+import { loadHistory, saveHistory, clearStoredHistory, generateSessionId, loadProfile, saveProfile, loadPreferences, savePreferences } from '../utils/storage';
 import { tutorApi } from '../services/tutorApi';
 
 /**
@@ -14,6 +14,10 @@ interface AppState {
   topic: string;
   explanation: Explanation | null;
   exercises: Exercise[];
+  
+  // Perfil y preferencias del estudiante
+  studentProfile: StudentProfile;
+  preferences: LearningPreferences;
   
   // Historial de sesiones
   sessions: Session[];
@@ -43,6 +47,13 @@ interface AppActions {
   clearExplanation: () => void;
   clearError: () => void;
   isValid: () => boolean;
+  
+  // Acciones del perfil y preferencias
+  updateStudentProfile: (profile: Partial<StudentProfile>) => void;
+  updatePreferences: (prefs: Partial<LearningPreferences>) => void;
+  addPriorKnowledge: (topic: string) => void;
+  addDifficulty: (concept: string) => void;
+  removeDifficulty: (concept: string) => void;
   
   // Acciones del historial
   addSession: (session: Omit<Session, 'id' | 'timestamp'>) => void;
@@ -82,6 +93,28 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   
+  // Perfil y preferencias del estudiante (inicializar desde localStorage)
+  const [studentProfile, setStudentProfile] = useState<StudentProfile>(() => {
+    const stored = loadProfile();
+    return stored || {
+      age: null,
+      levelDetail: '',
+      priorKnowledge: [],
+      difficulties: [],
+    };
+  });
+  
+  const [preferences, setPreferences] = useState<LearningPreferences>(() => {
+    const stored = loadPreferences();
+    return stored || {
+      easyReading: false,
+      examples: true,
+      analogies: true,
+      stepByStep: true,
+      realWorldContext: true,
+    };
+  });
+  
   // Historial de sesiones
   const [sessions, setSessions] = useState<Session[]>([]);
   
@@ -110,6 +143,18 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   }, [sessions, loadingSessions]);
 
   // ============================================
+  // EFECTOS: Guardar perfil y preferencias
+  // ============================================
+  
+  useEffect(() => {
+    saveProfile(studentProfile);
+  }, [studentProfile]);
+
+  useEffect(() => {
+    savePreferences(preferences);
+  }, [preferences]);
+
+  // ============================================
   // ACCIONES DEL TUTOR
   // ============================================
 
@@ -135,6 +180,54 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     setExercises([]);
   }, []);
 
+  // ============================================
+  // ACCIONES DEL PERFIL Y PREFERENCIAS
+  // ============================================
+
+  /**
+   * Actualiza el perfil del estudiante
+   */
+  const updateStudentProfile = useCallback((profile: Partial<StudentProfile>) => {
+    setStudentProfile(prev => ({ ...prev, ...profile }));
+  }, []);
+
+  /**
+   * Actualiza las preferencias de aprendizaje
+   */
+  const updatePreferences = useCallback((prefs: Partial<LearningPreferences>) => {
+    setPreferences(prev => ({ ...prev, ...prefs }));
+  }, []);
+
+  /**
+   * Agrega un tema a conocimientos previos
+   */
+  const addPriorKnowledge = useCallback((topicToAdd: string) => {
+    setStudentProfile(prev => ({
+      ...prev,
+      priorKnowledge: [...new Set([...prev.priorKnowledge, topicToAdd])],
+    }));
+  }, []);
+
+  /**
+   * Agrega un concepto a dificultades
+   */
+  const addDifficulty = useCallback((concept: string) => {
+    setStudentProfile(prev => ({
+      ...prev,
+      difficulties: [...new Set([...prev.difficulties, concept])],
+    }));
+  }, []);
+
+  /**
+   * Remueve un concepto de dificultades
+   */
+  const removeDifficulty = useCallback((concept: string) => {
+    setStudentProfile(prev => ({
+      ...prev,
+      difficulties: prev.difficulties.filter(d => d !== concept),
+    }));
+  }, []);
+
   /**
    * Solicita una explicación al tutor
    */
@@ -150,10 +243,24 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     setLoading(true);
 
     try {
+      // Preparar contexto completo para el backend
+      const profileData = {
+        age: studentProfile.age,
+        levelDetail: studentProfile.levelDetail,
+        priorKnowledge: studentProfile.priorKnowledge,
+        difficulties: studentProfile.difficulties,
+        preferences,
+      };
+
+      // Últimas 5 sesiones para contexto
+      const recentSessions = sessions.slice(0, 5);
+
       const response = await tutorApi.explain({
         subject,
         level,
         topic: topic.trim(),
+        profileData,
+        recentSessions,
       });
 
       if (response.success && response.data) {
@@ -172,6 +279,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             percentage: 0,
           },
         });
+        
+        // Agregar tema a conocimientos previos automáticamente
+        addPriorKnowledge(topic.trim());
       } else {
         setError(response.error || 'Error al obtener la explicación');
       }
@@ -197,11 +307,25 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     setLoadingExercises(true);
 
     try {
+      // Preparar contexto completo para el backend
+      const profileData = {
+        age: studentProfile.age,
+        levelDetail: studentProfile.levelDetail,
+        priorKnowledge: studentProfile.priorKnowledge,
+        difficulties: studentProfile.difficulties,
+        preferences,
+      };
+
+      // Últimas 5 sesiones para contexto
+      const recentSessions = sessions.slice(0, 5);
+
       const response = await tutorApi.generateExercises({
         subject,
         level,
         topic: topic.trim(),
         count: 3,
+        profileData,
+        recentSessions,
       });
 
       if (response.success && response.data) {
@@ -350,6 +474,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     loadingExercises,
     loadingSessions,
     error,
+    studentProfile,
+    preferences,
     
     // Acciones del tutor
     setSubject,
@@ -363,6 +489,13 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     clearExplanation,
     clearError,
     isValid,
+    
+    // Acciones de perfil y preferencias
+    updateStudentProfile,
+    updatePreferences,
+    addPriorKnowledge,
+    addDifficulty,
+    removeDifficulty,
     
     // Acciones del historial
     addSession,

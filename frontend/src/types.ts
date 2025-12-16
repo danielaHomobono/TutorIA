@@ -4,6 +4,23 @@ export type Subject = 'matematica' | 'fisica';
 // Niveles educativos
 export type Level = 'secundaria' | 'universidad';
 
+// Preferencias de aprendizaje
+export interface LearningPreferences {
+  easyReading: boolean;      // Usar lenguaje simplificado
+  examples: boolean;          // Incluir ejemplos prácticos
+  analogies: boolean;         // Usar analogías y metáforas
+  stepByStep: boolean;        // Desglosar en pasos detallados
+  realWorldContext: boolean;  // Conectar con situaciones reales
+}
+
+// Perfil del estudiante
+export interface StudentProfile {
+  age: number | null;              // Edad del estudiante
+  levelDetail: string;             // Detalle del nivel (ej. "3er año")
+  priorKnowledge: string[];        // Temas ya conocidos
+  difficulties: string[];          // Conceptos problemáticos
+}
+
 // Paso individual de una explicación
 export interface ExplanationStep {
   id: number;
@@ -44,6 +61,14 @@ export interface ExplainRequest {
   subject: Subject;
   level: Level;
   topic: string;
+  profileData?: {
+    age: number | null;
+    levelDetail: string;
+    priorKnowledge: string[];
+    difficulties: string[];
+    preferences: LearningPreferences;
+  };
+  recentSessions?: Session[];
 }
 
 // Ejercicio individual
@@ -69,6 +94,14 @@ export interface GenerateExercisesRequest {
   level: Level;
   topic: string;
   count?: number;
+  profileData?: {
+    age: number | null;
+    levelDetail: string;
+    priorKnowledge: string[];
+    difficulties: string[];
+    preferences: LearningPreferences;
+  };
+  recentSessions?: Session[];
 }
 
 // Response para generar ejercicios

@@ -1,6 +1,8 @@
-import type { Session } from '../types';
+import type { Session, StudentProfile, LearningPreferences } from '../types';
 
 const HISTORY_STORAGE_KEY = 'tutoria_history';
+const PROFILE_STORAGE_KEY = 'tutoria_profile';
+const PREFERENCES_STORAGE_KEY = 'tutoria_preferences';
 
 /**
  * Carga el historial desde localStorage
@@ -54,4 +56,88 @@ export const clearStoredHistory = (): void => {
  */
 export const generateSessionId = (): string => {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// ============================================
+// PERFIL DEL ESTUDIANTE
+// ============================================
+
+/**
+ * Carga el perfil del estudiante desde localStorage
+ */
+export const loadProfile = (): StudentProfile | null => {
+  try {
+    const data = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!data) return null;
+
+    const profile = JSON.parse(data) as StudentProfile;
+    return profile;
+  } catch (error) {
+    console.error('Error loading profile:', error);
+    return null;
+  }
+};
+
+/**
+ * Guarda el perfil del estudiante en localStorage
+ */
+export const saveProfile = (profile: StudentProfile): void => {
+  try {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+  } catch (error) {
+    console.error('Error saving profile:', error);
+  }
+};
+
+/**
+ * Limpia el perfil del localStorage
+ */
+export const clearProfile = (): void => {
+  try {
+    localStorage.removeItem(PROFILE_STORAGE_KEY);
+  } catch (error) {
+    console.error('Error clearing profile:', error);
+  }
+};
+
+// ============================================
+// PREFERENCIAS DE APRENDIZAJE
+// ============================================
+
+/**
+ * Carga las preferencias de aprendizaje desde localStorage
+ */
+export const loadPreferences = (): LearningPreferences | null => {
+  try {
+    const data = localStorage.getItem(PREFERENCES_STORAGE_KEY);
+    if (!data) return null;
+
+    const preferences = JSON.parse(data) as LearningPreferences;
+    return preferences;
+  } catch (error) {
+    console.error('Error loading preferences:', error);
+    return null;
+  }
+};
+
+/**
+ * Guarda las preferencias de aprendizaje en localStorage
+ */
+export const savePreferences = (preferences: LearningPreferences): void => {
+  try {
+    localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+  }
+};
+
+/**
+ * Limpia las preferencias del localStorage
+ */
+export const clearPreferences = (): void => {
+  try {
+    localStorage.removeItem(PREFERENCES_STORAGE_KEY);
+  } catch (error) {
+    console.error('Error clearing preferences:', error);
+  }
 };

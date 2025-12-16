@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import SubjectTabs from '../components/SubjectTabs';
@@ -9,9 +9,14 @@ import ExplanationPanel from '../components/ExplanationPanel';
 import ExerciseList from '../components/ExerciseList';
 import FeedbackAlert from '../components/FeedbackAlert';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ProfileSettings from '../components/ProfileSettings';
+import PreferencesSettings from '../components/PreferencesSettings';
 
 const Tutor = () => {
   const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences'>('profile');
+  const [showSettings, setShowSettings] = useState(false);
+  
   const {
     subject,
     level,
@@ -109,6 +114,83 @@ const Tutor = () => {
           </div>
         </div>
 
+        {/* Settings Section (Collapsible) */}
+        <div className="card mb-8 overflow-hidden animate-slideUp">
+          {/* Header */}
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚙️</span>
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Personalización
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Configura tu perfil y preferencias de aprendizaje
+                </p>
+              </div>
+            </div>
+            <svg
+              className={`w-6 h-6 text-gray-600 transition-transform duration-300 ${
+                showSettings ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          {/* Content */}
+          {showSettings && (
+            <div className="border-t border-gray-200">
+              {/* Tabs */}
+              <div className="flex border-b border-gray-200 px-6">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`
+                    px-6 py-4 font-medium text-sm transition-colors relative
+                    ${
+                      activeTab === 'profile'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }
+                  `}
+                >
+                  🎓 Perfil
+                </button>
+                <button
+                  onClick={() => setActiveTab('preferences')}
+                  className={`
+                    px-6 py-4 font-medium text-sm transition-colors relative
+                    ${
+                      activeTab === 'preferences'
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }
+                  `}
+                >
+                  ⚙️ Preferencias
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === 'profile' && <ProfileSettings />}
+                {activeTab === 'preferences' && <PreferencesSettings />}
+              </div>
+            </div>
+          )}
+        </div>
+
       {/* Error Alert */}
       {error && (
         <div className="mb-6">
@@ -137,7 +219,7 @@ const Tutor = () => {
                     ${
                       loadingExercises
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-secondary-500 to-secondary-600 text-white hover:from-secondary-600 hover:to-secondary-700 hover:scale-105 hover:shadow-xl'
+                        : 'bg-linear-to-r from-secondary-500 to-secondary-600 text-white hover:from-secondary-600 hover:to-secondary-700 hover:scale-105 hover:shadow-xl'
                     }
                   `}
                 >
