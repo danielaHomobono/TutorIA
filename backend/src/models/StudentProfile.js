@@ -23,6 +23,7 @@ export class StudentProfile {
     this.levelDetail = data.levelDetail || '';              // "1er año", "cálculo I", etc.
     this.priorKnowledge = data.priorKnowledge || [];        // Temas ya conocidos
     this.difficulties = data.difficulties || [];            // Conceptos problemáticos
+    this.interests = data.interests || [];                  // Intereses personales (autos, deportes, etc.)
     this.preferences = {
       ...LearningPreferences,
       ...(data.preferences || {}),

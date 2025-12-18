@@ -4,6 +4,7 @@
  */
 
 import { StudentProfile, SessionContext } from '../models/StudentProfile.js';
+import * as aiService from '../services/aiService.js';
 
 /**
  * Generador de explicaciones adaptativas
@@ -15,9 +16,9 @@ export class AdaptiveExplanationEngine {
   }
 
   /**
-   * Genera una explicación personalizada
+   * Genera una explicación personalizada usando IA
    */
-  generateExplanation(subject, level, topic) {
+  async generateExplanation(subject, level, topic) {
     // Analizar contexto
     const relatedTopics = this.context.findRelatedTopics(topic);
     const isReview = this.profile.hasKnowledge(topic);
@@ -25,13 +26,20 @@ export class AdaptiveExplanationEngine {
 
     // Ajustar profundidad según perfil
     const depth = this.determineDepth();
-    const language = this.adjustLanguage();
 
-    // Generar resumen adaptado
-    const summary = this.generateSummary(topic, subject, isReview, isDifficult);
+    // Llamar a la IA para generar contenido personalizado
+    const aiResponse = await aiService.generateExplanation(
+      topic,
+      subject,
+      level,
+      this.profile
+    );
 
-    // Generar pasos adaptados
-    const steps = this.generateSteps(topic, subject, level, depth, relatedTopics);
+    // Extraer el contenido de la respuesta (puede venir de Groq, Together AI o Fallback)
+    const aiExplanation = aiResponse.content;
+
+    // Parsear la respuesta de la IA en formato estructurado
+    const { summary, steps } = this.parseAIResponse(aiExplanation, topic, subject);
 
     return {
       subject,
@@ -51,9 +59,72 @@ export class AdaptiveExplanationEngine {
           relatedTopics,
           weaknesses: this.context.weaknesses,
         },
+        generatedByAI: true,
       },
       timestamp: new Date(),
     };
+  }
+
+  /**
+   * Parsea la respuesta de la IA en formato estructurado
+   */
+  parseAIResponse(aiText, topic, subject) {
+    // Dividir en párrafos
+    const paragraphs = aiText.split('\n\n').filter(p => p.trim());
+
+    // Primer párrafo como resumen
+    const summary = paragraphs[0] || `Explicación sobre ${topic} en ${subject}.`;
+
+    // Convertir resto en steps
+    const steps = [];
+    let stepId = 1;
+
+    paragraphs.slice(1).forEach((para, index) => {
+      // Detectar si tiene título (línea que termina en :)
+      const lines = para.split('\n');
+      let title = `Paso ${stepId}`;
+      let content = para;
+
+      if (lines[0].includes(':') || lines[0].match(/^\d+\./)) {
+        title = lines[0].replace(/^\d+\.?\s*/, '').replace(/:$/, '').trim();
+        content = lines.slice(1).join('\n').trim() || lines[0];
+      }
+
+      steps.push({
+        id: stepId++,
+        title: this.addEmojiToTitle(title, index),
+        content: content.trim(),
+      });
+    });
+
+    // Si no hay steps, crear uno básico
+    if (steps.length === 0) {
+      steps.push({
+        id: 1,
+        title: '📚 Explicación Completa',
+        content: aiText,
+      });
+    }
+
+    return { summary, steps };
+  }
+
+  /**
+   * Agrega emoji apropiado al título
+   */
+  addEmojiToTitle(title, index) {
+    const emojis = ['📚', '🔑', '💡', '🎯', '🌍', '✍️', '🔬', '📐'];
+    const lowerTitle = title.toLowerCase();
+
+    if (lowerTitle.includes('introduc') || lowerTitle.includes('inicio')) return '📚 ' + title;
+    if (lowerTitle.includes('concept') || lowerTitle.includes('clave')) return '🔑 ' + title;
+    if (lowerTitle.includes('ejemplo')) return '💡 ' + title;
+    if (lowerTitle.includes('analog') || lowerTitle.includes('metáfora')) return '🎯 ' + title;
+    if (lowerTitle.includes('aplicac') || lowerTitle.includes('real')) return '🌍 ' + title;
+    if (lowerTitle.includes('práctic') || lowerTitle.includes('ejercicio')) return '✍️ ' + title;
+
+    // Default: usar emoji según índice
+    return emojis[index % emojis.length] + ' ' + title;
   }
 
   /**
@@ -273,27 +344,32 @@ export class AdaptiveExerciseGenerator {
   }
 
   /**
-   * Genera ejercicios personalizados
+   * Genera ejercicios personalizados usando IA
    */
-  generateExercises(subject, level, topic, count = 3) {
-    const exercises = [];
+  async generateExercises(subject, level, topic, count = 3) {
     const difficulty = this.determineDifficulty(topic);
 
-    for (let i = 1; i <= count; i++) {
-      exercises.push({
-        id: i,
-        question: this.generateQuestion(topic, subject, i, difficulty),
-        correctAnswer: `Respuesta ${i}`,
-        hint: this.generateHint(topic, i, difficulty),
-        difficulty: difficulty,
-        metadata: {
-          adaptedFor: this.profile.age ? `${this.profile.age} años` : level,
-          focus: this.profile.hasDifficulty(topic) ? 'refuerzo' : 'práctica',
-        },
-      });
-    }
+    // Llamar a la IA para generar ejercicios
+    const aiResponse = await aiService.generateExercises(
+      topic,
+      subject,
+      level,
+      this.profile,
+      count
+    );
 
-    return exercises;
+    // Extraer los ejercicios de la respuesta
+    const exercises = aiResponse.exercises;
+
+    // Agregar metadata a cada ejercicio
+    return exercises.map((exercise, index) => ({
+      ...exercise,
+      difficulty,
+      metadata: {
+        adaptedFor: this.profile.age ? `${this.profile.age} años` : level,
+        focus: this.profile.hasDifficulty(topic) ? 'refuerzo' : 'práctica',
+      },
+    }));
   }
 
   /**
@@ -304,51 +380,5 @@ export class AdaptiveExerciseGenerator {
     if (this.profile.hasKnowledge(topic)) return 'medio';
     if (this.context.strengths.includes(topic)) return 'difícil';
     return 'medio';
-  }
-
-  /**
-   * Genera una pregunta adaptada
-   */
-  generateQuestion(topic, subject, number, difficulty) {
-    const difficultyLabels = {
-      fácil: 'básico',
-      medio: 'estándar',
-      difícil: 'avanzado',
-    };
-
-    let question = `Ejercicio ${number} (nivel ${difficultyLabels[difficulty]}): `;
-    
-    if (this.profile.preferences.realWorldContext) {
-      question += `En una situación real, `;
-    }
-
-    question += `resuelve el siguiente problema sobre ${topic}.`;
-
-    if (this.profile.isYoungStudent()) {
-      question += ` Tómate tu tiempo y piensa paso a paso.`;
-    }
-
-    return question;
-  }
-
-  /**
-   * Genera una pista adaptada
-   */
-  generateHint(topic, number, difficulty) {
-    let hint = 'Pista: ';
-
-    if (difficulty === 'fácil') {
-      hint += `Recuerda los conceptos básicos de ${topic}. `;
-    } else if (difficulty === 'medio') {
-      hint += `Aplica la fórmula principal de ${topic}. `;
-    } else {
-      hint += `Combina los conceptos avanzados que aprendiste. `;
-    }
-
-    if (this.profile.preferences.stepByStep) {
-      hint += `Hazlo paso a paso y verifica cada cálculo.`;
-    }
-
-    return hint;
   }
 }

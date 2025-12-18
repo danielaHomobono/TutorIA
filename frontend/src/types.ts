@@ -19,6 +19,7 @@ export interface StudentProfile {
   levelDetail: string;             // Detalle del nivel (ej. "3er año")
   priorKnowledge: string[];        // Temas ya conocidos
   difficulties: string[];          // Conceptos problemáticos
+  interests: string[];             // Intereses personales (autos, deportes, música, etc.)
 }
 
 // Paso individual de una explicación

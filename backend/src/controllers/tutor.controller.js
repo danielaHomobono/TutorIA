@@ -20,9 +20,9 @@ export const explainTopic = async (req, res, next) => {
     const profile = new StudentProfile(profileData || {});
     const context = new SessionContext(recentSessions || []);
 
-    // Generar explicación adaptativa
+    // Generar explicación adaptativa usando IA
     const engine = new AdaptiveExplanationEngine(profile, context);
-    const explanation = engine.generateExplanation(subject, level, topic);
+    const explanation = await engine.generateExplanation(subject, level, topic);
 
     res.json({
       success: true,
@@ -55,9 +55,9 @@ export const generateExercises = async (req, res, next) => {
     const profile = new StudentProfile(profileData || {});
     const context = new SessionContext(recentSessions || []);
 
-    // Generar ejercicios adaptativos
+    // Generar ejercicios adaptativos usando IA
     const generator = new AdaptiveExerciseGenerator(profile, context);
-    const exercises = generator.generateExercises(subject, level, topic, count);
+    const exercises = await generator.generateExercises(subject, level, topic, count);
 
     res.json({
       success: true,

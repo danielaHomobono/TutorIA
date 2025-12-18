@@ -3,7 +3,7 @@ import { useApp } from '../contexts/AppContext';
 
 /**
  * Componente para configurar el perfil del estudiante
- * Permite editar edad, nivel detallado, conocimientos previos y dificultades
+ * Permite editar edad, nivel detallado, conocimientos previos, dificultades e intereses
  */
 export default function ProfileSettings() {
   const { 
@@ -16,6 +16,7 @@ export default function ProfileSettings() {
 
   const [newKnowledge, setNewKnowledge] = useState('');
   const [newDifficulty, setNewDifficulty] = useState('');
+  const [newInterest, setNewInterest] = useState('');
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -44,6 +45,24 @@ export default function ProfileSettings() {
       addDifficulty(newDifficulty.trim());
       setNewDifficulty('');
     }
+  };
+
+  const handleAddInterest = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newInterest.trim()) {
+      const currentInterests = studentProfile.interests || [];
+      updateStudentProfile({
+        interests: [...currentInterests, newInterest.trim()]
+      });
+      setNewInterest('');
+    }
+  };
+
+  const handleRemoveInterest = (interestToRemove: string) => {
+    const currentInterests = studentProfile.interests || [];
+    updateStudentProfile({
+      interests: currentInterests.filter(i => i !== interestToRemove)
+    });
   };
 
   return (
@@ -181,6 +200,54 @@ export default function ProfileSettings() {
         </form>
         <p className="mt-1 text-xs text-gray-500">
           Conceptos con los que tienes problemas (recibirás explicaciones más detalladas)
+        </p>
+      </div>
+
+      {/* Intereses Personales - NUEVO */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          🎯 Intereses Personales
+        </label>
+        
+        {/* Lista de intereses */}
+        {studentProfile.interests && studentProfile.interests.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {studentProfile.interests.map((interest, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
+              >
+                {interest}
+                <button
+                  onClick={() => handleRemoveInterest(interest)}
+                  className="ml-1 hover:text-purple-900 transition-colors"
+                  aria-label={`Quitar ${interest}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Formulario para agregar */}
+        <form onSubmit={handleAddInterest} className="flex gap-2">
+          <input
+            type="text"
+            value={newInterest}
+            onChange={(e) => setNewInterest(e.target.value)}
+            placeholder="Ej: autos, fútbol, música, videojuegos..."
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          >
+            Agregar
+          </button>
+        </form>
+        <p className="mt-1 text-xs text-gray-500">
+          ¡La IA usará tus intereses para crear ejemplos super didácticos! 🚀
         </p>
       </div>
     </div>

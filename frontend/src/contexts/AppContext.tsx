@@ -101,6 +101,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       levelDetail: '',
       priorKnowledge: [],
       difficulties: [],
+      interests: [],  // Inicializar array de intereses
     };
   });
   
