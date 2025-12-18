@@ -250,6 +250,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         levelDetail: studentProfile.levelDetail,
         priorKnowledge: studentProfile.priorKnowledge,
         difficulties: studentProfile.difficulties,
+        interests: studentProfile.interests || [],  // ← AGREGADO: Intereses personales
         preferences,
       };
 
@@ -314,6 +315,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         levelDetail: studentProfile.levelDetail,
         priorKnowledge: studentProfile.priorKnowledge,
         difficulties: studentProfile.difficulties,
+        interests: studentProfile.interests || [],  // ← AGREGADO: Intereses personales
         preferences,
       };
 

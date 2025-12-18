@@ -9,12 +9,15 @@ console.log('  Together:', togetherService.isAvailable() ? ' OK' : ' NO');
 console.log('  Fallback: OK\n');
 
 export async function generateExplanation(topic, subject, level, profile = {}) {
-  const { age = 16, preferences = {} } = profile;
+  const { age = 16, preferences = {}, interests = [] } = profile;
+  
+  // Agregar interests a preferences para que groqService los use
+  const enrichedPreferences = { ...preferences, interests };
 
   if (groqService.isAvailable()) {
     try {
       if (LOG_AI_SOURCE) console.log('[1] Groq...');
-      const content = await groqService.generateExplanation(topic, age, level, preferences);
+      const content = await groqService.generateExplanation(topic, age, level, enrichedPreferences);
       if (LOG_AI_SOURCE) console.log('[1] OK');
       return { content, source: 'groq', model: 'llama-3.3-70b' };
     } catch (e) {
@@ -25,7 +28,7 @@ export async function generateExplanation(topic, subject, level, profile = {}) {
   if (togetherService.isAvailable()) {
     try {
       if (LOG_AI_SOURCE) console.log('[2] Together...');
-      const content = await togetherService.generateExplanation(topic, age, level, preferences);
+      const content = await togetherService.generateExplanation(topic, age, level, enrichedPreferences);
       if (LOG_AI_SOURCE) console.log('[2] OK');
       return { content, source: 'together', model: 'llama-3-70b' };
     } catch (e) {
